@@ -2,14 +2,19 @@ package com.excall.minato.posture_analysis;
 
 import android.content.Intent;
 import android.graphics.Camera;
+import android.graphics.Point;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
+
+
 
 
     @Override
@@ -17,12 +22,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //  Display Size
+        WindowManager wm =(WindowManager)getSystemService(WINDOW_SERVICE);
+        Display display = getWindowManager().getDefaultDisplay();
+        Point realSize = new Point();
+        display.getRealSize(realSize);
+        int width = realSize.x;
+        int height = realSize.y;
+
         //  TextViews
         TextView title = findViewById(R.id.title);
         title.setText("ホーム画面");
 
         //  Buttons
         Button Camera = (Button)findViewById(R.id.camera);
+        Camera.setWidth(3 * width / 5);
+        Camera.setHeight(height / 5);
         Camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

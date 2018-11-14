@@ -1,24 +1,59 @@
 package com.excall.minato.posture_analysis;
 
 import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.graphics.SurfaceTexture;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
+import android.media.AudioAttributes;
+import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
+import android.view.TextureView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
-public class CameraActivity extends AppCompatActivity {
+import static java.lang.Math.abs;
+
+public class CameraActivity extends AppCompatActivity implements SensorEventListener {
 
     private static final int REQUEST_MULTI_PERMISSIONS = 101;
 
@@ -27,7 +62,33 @@ public class CameraActivity extends AppCompatActivity {
     public boolean isAllowedExternalRead = false;
     public boolean isAllowedExternalWrite = false;
 
+    //  効果音
+    SoundPool soundPool;
+    private int startcamera_sound, shutter_sound;
+
     //  その他
+    private CameraDevice mCameraDevice;
+    private TextureView mTextureView;
+    private Handler mBackgroundHandler = new Handler();
+    private CameraCaptureSession mCaptureSession = null;
+    private String filePath;
+    private TextView TimerText;
+
+    private SimpleDateFormat TimerFormat = new SimpleDateFormat("mm:ss.SSS", Locale.US);
+    //  10sec = 10 * 1000 = 10000msec
+    final long countNumber = 10000;
+    //  interval 10msec
+    final long interval = 10;
+    final CountDown countDown = new CountDown(countNumber, interval);
+
+    //  センサー閾値
+    final double threshold = 0.005;
+
+    private CaptureRequest.Builder mPreviewRequestBuilder;
+    private CaptureRequest mPreviewRequest;
+
+    //  Sensor
+    private SensorManager sensorManager;
 
 
     public StringBuffer message = new StringBuffer();
@@ -37,19 +98,39 @@ public class CameraActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        //  Display Size
+        WindowManager wm =(WindowManager)getSystemService(WINDOW_SERVICE);
+        Display display = getWindowManager().getDefaultDisplay();
+        Point realSize = new Point();
+        display.getRealSize(realSize);
+        int width = realSize.x;
+        int height = realSize.y;
+
         //  TextViews
         TextView title = findViewById(R.id.title);
         title.setText("CameraActivity");
 
+        TimerText = findViewById(R.id.Timer_text);
+        TimerText.setText(TimerFormat.format(0));
+
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        //-------------------------------------------------------//
+
         //  Buttons
         Button Test = (Button)findViewById(R.id.test);
+        Test.setWidth(2*width/5);
+        Test.setHeight(height/9);
         Test.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 finish();
             }
         });
+
         Button Measure = (Button)findViewById(R.id.measure);
+        Measure.setWidth(2*width/5);
+        Measure.setHeight(height/9);
         Measure.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -57,8 +138,60 @@ public class CameraActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-    }
 
+        //-------------------------------------------------------//
+
+        //  TextureView
+        mTextureView = (TextureView)findViewById(R.id.texture);
+        mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                // 先ほどのカメラを開く部分をメソッド化した
+                openCamera();
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+            }
+        });
+
+        //-------------------------------------------------------//
+
+        //  Sounds
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build();
+
+        soundPool = new SoundPool.Builder()
+                .setAudioAttributes(audioAttributes)
+                .setMaxStreams(2)
+                .build();
+
+        startcamera_sound  = soundPool.load(this,R.raw.startcamera,1);
+        shutter_sound = soundPool.load(this,R.raw.shutter,1);
+
+        //  load完了確認
+        soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                Log.d("debug","sampleId="+sampleId);
+                Log.d("debug","status="+status);
+            }
+        });
+
+    }
 
     //  Permission Check
     private void checkMultiPermissions(){
@@ -160,6 +293,200 @@ public class CameraActivity extends AppCompatActivity {
     }
 
 
+    private void openCamera(){
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        String selectedCameraId = "";
+        try {
+            selectedCameraId = manager.getCameraIdList()[1];
+
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            manager.openCamera(selectedCameraId, mStateCallback, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(CameraDevice cameraDevice) {
+            mCameraDevice = cameraDevice;
+            createCameraPreviewSession();
+        }
+
+        @Override
+        public void onDisconnected(CameraDevice cameraDevice) {
+            cameraDevice.close();
+            mCameraDevice = null;
+        }
+
+        @Override
+        public void onError(CameraDevice cameraDevice, int error) {
+            cameraDevice.close();
+            mCameraDevice = null;
+        }
+
+    };
+
+    private void createCameraPreviewSession() {
+        SurfaceTexture texture = mTextureView.getSurfaceTexture();
+        texture.setDefaultBufferSize(3492, 4656); // 自分の手元のデバイスで決めうちしてます
+        Surface surface = new Surface(texture);
+
+        try {
+            mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewRequestBuilder.addTarget(surface);
+            mPreviewRequest = mPreviewRequestBuilder.build();
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            mCameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(CameraCaptureSession session) {
+                    // カメラがcloseされている場合
+                    if (null == mCameraDevice) {
+                        return;
+                    }
+
+                    mCaptureSession = session;
+
+                    try {
+                        session.setRepeatingRequest(mPreviewRequest, null, null);
+                    } catch (CameraAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onConfigureFailed(CameraCaptureSession session) {
+
+                }
+            }, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //  画像確認
+    public void checkBitmap() {
+        try{
+            mCaptureSession.stopRepeating(); // プレビューの更新を止める
+            Bitmap bitmap = mTextureView.getBitmap();
+            Intent intent = new Intent(getApplication(), PicturedActivity.class);
+            intent.putExtra("bitmap", bitmap);
+            startActivityForResult(intent,1);
+
+
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //  画像保存
+    public void saveBitmap() {
+
+        SimpleDateFormat filename = new SimpleDateFormat("yyyyMMddHHmmss");
+        filePath = getExternalFilesDir(null).getPath();
+
+        File file = new File(filePath);
+        Date mDate = new Date();
+
+
+        try {
+            mCaptureSession.stopRepeating(); // プレビューの更新を止める
+            if(mTextureView.isAvailable()) {
+
+                FileOutputStream fos = null;
+                fos = new FileOutputStream(new File(file,filename.format(mDate) + ".jpg"));
+                Bitmap bitmap = mTextureView.getBitmap();
+                bitmap.compress(Bitmap.CompressFormat.JPEG,100,fos);
+
+                fos.close();
+            }
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //  save index
+        ContentValues values = new ContentValues();
+        ContentResolver contentResolver = getContentResolver();
+        values.put(MediaStore.Images.Media.MIME_TYPE,"image/jpeg");
+        contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+        //  Send Intent
+        Intent intent = new Intent(getApplication(), PicturedActivity.class);
+        //intent.putExtra("path", file.getAbsolutePath() +"/" + filename.toString() + ".jpg");
+        intent.putExtra("path", file.getAbsolutePath() +"/" + filename.format(mDate) + ".jpg");
+        startActivity(intent);
+
+    }
+
+    class CountDown extends CountDownTimer {
+
+        CountDown(long millisInFuture, long countDownInterval){
+            super(millisInFuture,countDownInterval);
+        }
+
+
+
+        //  完了時呼ばれる
+        @Override
+        public void onFinish(){
+
+            TimerText.setText(TimerFormat.format(0));
+            soundPool.play(shutter_sound,1.0f,1.0f,1,0,1);
+            saveBitmap();
+
+        }
+
+        //  インターバルで呼ばれる
+        @Override
+        public void onTick(long millisUntilFinished){
+
+            TimerText.setText(TimerFormat.format(millisUntilFinished));
+
+        }
+    }
+
+    //  センサー停止
+    protected void stop_sensor(){
+        sensorManager.unregisterListener(this);
+        soundPool.play(startcamera_sound,1.0f,1.0f,0,0,1);
+        countDown.start();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event){
+        Log.d("debug","onSensorChanged");
+
+        if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE){
+            float sensorX = event.values[0];
+            float sensorY = event.values[1];
+            float sensorZ = event.values[2];
+
+            if (abs(sensorX) < threshold && abs(sensorY) < threshold && abs(sensorZ) < threshold){
+                stop_sensor();
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy){
+
+    }
+
+
 
     @Override
     protected void onStart() {
@@ -178,6 +505,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
+        createCameraPreviewSession();
         Log.d("debug","onRestartCameraActivity()");
     }
 
@@ -185,6 +513,19 @@ public class CameraActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d("debug","onResumeCameraActivity()");
+
+        //  Listenerの登録
+        Sensor gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        Sensor gyro_uc = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE_UNCALIBRATED);
+
+        if (gyro != null){
+            sensorManager.registerListener(this,gyro,SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(this,gyro_uc,SensorManager.SENSOR_DELAY_UI);
+        }
+        else{
+            String ns = "No Support!";
+            sensorManager.unregisterListener(this);
+        }
     }
 
     @Override
@@ -197,12 +538,17 @@ public class CameraActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.d("debug","onStopCameraActivity()");
+
+        countDown.cancel();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         Log.d("debug","onDestroyCameraActivity()");
+
+        countDown.cancel();
+
         System.gc();
     }
 }

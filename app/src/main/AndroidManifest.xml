@@ -26,6 +26,10 @@
             android:label="@string/app_name">
         </activity>
 
+        <activity android:name=".PicturedActivity"
+            android:label="@string/app_name">
+        </activity>
+
         <activity android:name=".MeasureActivity"
             android:label="@string/app_name">
         </activity>
