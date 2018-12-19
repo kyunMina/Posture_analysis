@@ -18,13 +18,59 @@
         android:layout_height="wrap_content"
         android:layout_weight="1" />
 
-    <Button
-        android:id="@+id/test"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="30dp"
-        android:text="戻る"
-        android:background="@drawable/button_bg"/>
+        android:layout_gravity="center">
+
+        <Button
+            android:id="@+id/left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:text="左に回転"/>
+
+        <Button
+            android:id="@+id/right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:text="右に回転"/>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center">
+
+        <Button
+            android:id="@+id/retake"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:text="撮り直し"
+            android:textStyle="bold"
+            android:textSize="10pt"
+            android:background="@drawable/button_bg"/>
+
+        <Button
+            android:id="@+id/analysis"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:text="解析"
+            android:textStyle="bold"
+            android:textSize="10pt"
+            android:background="@drawable/button_bg"/>
+
+    </LinearLayout>
+
+
 
 </LinearLayout>

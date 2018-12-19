@@ -55,9 +55,8 @@ import static java.lang.Math.abs;
 
 public class CameraActivity extends AppCompatActivity implements SensorEventListener {
 
-    private static final int REQUEST_MULTI_PERMISSIONS = 101;
-
     //  Permission
+    private static final int REQUEST_MULTI_PERMISSIONS = 101;
     public boolean isAllowedCamera = false;
     public boolean isAllowedExternalRead = false;
     public boolean isAllowedExternalWrite = false;

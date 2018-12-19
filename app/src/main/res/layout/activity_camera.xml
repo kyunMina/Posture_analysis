@@ -21,7 +21,6 @@
     <TextView
         android:id="@+id/Timer_text"
         android:textSize="30sp"
-        android:layout_marginStart="20dp"
         android:textColor="#ff89"
         android:layout_gravity="center"
         android:layout_width="wrap_content"
