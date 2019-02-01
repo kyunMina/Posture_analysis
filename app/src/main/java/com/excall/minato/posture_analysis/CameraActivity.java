@@ -29,7 +29,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -38,7 +37,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,7 +45,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -55,50 +52,59 @@ import static java.lang.Math.abs;
 
 public class CameraActivity extends AppCompatActivity implements SensorEventListener {
 
-    //  Permission
+
     private static final int REQUEST_MULTI_PERMISSIONS = 101;
+    final long countNumber = 10000;     //  10sec = 10 * 1000 = 10000msec
+    final long interval = 10;       //  interval 10msec
+    final CountDown countDown = new CountDown(countNumber, interval);
+    final double threshold = 0.005;     //  センサー閾値
     public boolean isAllowedCamera = false;
     public boolean isAllowedExternalRead = false;
     public boolean isAllowedExternalWrite = false;
+    public StringBuffer message = new StringBuffer();
 
-    //  効果音
     SoundPool soundPool;
+    Button Test, Measure;
     private int startcamera_sound, shutter_sound;
-
-    //  その他
+    //  Camera,View
     private CameraDevice mCameraDevice;
     private TextureView mTextureView;
     private Handler mBackgroundHandler = new Handler();
     private CameraCaptureSession mCaptureSession = null;
-    private String filePath;
-    private TextView TimerText;
-
-    private SimpleDateFormat TimerFormat = new SimpleDateFormat("mm:ss.SSS", Locale.US);
-    //  10sec = 10 * 1000 = 10000msec
-    final long countNumber = 10000;
-    //  interval 10msec
-    final long interval = 10;
-    final CountDown countDown = new CountDown(countNumber, interval);
-
-    //  センサー閾値
-    final double threshold = 0.005;
-
     private CaptureRequest.Builder mPreviewRequestBuilder;
     private CaptureRequest mPreviewRequest;
+    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(CameraDevice cameraDevice) {
+            mCameraDevice = cameraDevice;
+            createCameraPreviewSession();
+        }
 
-    //  Sensor
+        @Override
+        public void onDisconnected(CameraDevice cameraDevice) {
+            cameraDevice.close();
+            mCameraDevice = null;
+        }
+
+        @Override
+        public void onError(CameraDevice cameraDevice, int error) {
+            cameraDevice.close();
+            mCameraDevice = null;
+        }
+
+    };
+    private TextView TimerText;
+    private SimpleDateFormat TimerFormat = new SimpleDateFormat("mm:ss.SSS", Locale.US);
     private SensorManager sensorManager;
-
-
-    public StringBuffer message = new StringBuffer();
+    private String filePath;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
         //  Display Size
-        WindowManager wm =(WindowManager)getSystemService(WINDOW_SERVICE);
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         Display display = getWindowManager().getDefaultDisplay();
         Point realSize = new Point();
         display.getRealSize(realSize);
@@ -106,20 +112,15 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         int height = realSize.y;
 
         //  TextViews
-        TextView title = findViewById(R.id.title);
-        title.setText("CameraActivity");
-
         TimerText = findViewById(R.id.Timer_text);
         TimerText.setText(TimerFormat.format(0));
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
-        //-------------------------------------------------------//
-
         //  Buttons
-        Button Test = (Button)findViewById(R.id.test);
-        Test.setWidth(2*width/5);
-        Test.setHeight(height/9);
+        Test = (Button) findViewById(R.id.test);
+        Test.setWidth(2 * width / 5);
+        Test.setHeight(height / 9);
         Test.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -127,9 +128,9 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
         });
 
-        Button Measure = (Button)findViewById(R.id.measure);
-        Measure.setWidth(2*width/5);
-        Measure.setHeight(height/9);
+        Measure = (Button) findViewById(R.id.measure);
+        Measure.setWidth(2 * width / 5);
+        Measure.setHeight(height / 9);
         Measure.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -138,14 +139,11 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
         });
 
-        //-------------------------------------------------------//
-
         //  TextureView
-        mTextureView = (TextureView)findViewById(R.id.texture);
+        mTextureView = (TextureView) findViewById(R.id.texture);
         mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                // 先ほどのカメラを開く部分をメソッド化した
                 openCamera();
             }
 
@@ -165,8 +163,6 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
         });
 
-        //-------------------------------------------------------//
-
         //  Sounds
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
@@ -178,22 +174,22 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                 .setMaxStreams(2)
                 .build();
 
-        startcamera_sound  = soundPool.load(this,R.raw.startcamera,1);
-        shutter_sound = soundPool.load(this,R.raw.shutter,1);
+        startcamera_sound = soundPool.load(this, R.raw.startcamera, 1);
+        shutter_sound = soundPool.load(this, R.raw.shutter, 1);
 
-        //  load完了確認
+        //  Sound_Load
         soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             @Override
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-                Log.d("debug","sampleId="+sampleId);
-                Log.d("debug","status="+status);
+                Log.d("debug", "sampleId=" + sampleId);
+                Log.d("debug", "status=" + status);
             }
         });
 
     }
 
     //  Permission Check
-    private void checkMultiPermissions(){
+    private void checkMultiPermissions() {
         int permissionCamera = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.CAMERA);
         int permissionReadExtStorage = ContextCompat.checkSelfPermission(this,
@@ -205,44 +201,38 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
         //  Permissionが許可されているか確認
         //  Camera
-        if (permissionCamera == PackageManager.PERMISSION_GRANTED){
+        if (permissionCamera == PackageManager.PERMISSION_GRANTED) {
             isAllowedCamera = true;
-            Log.d("debug","permissionCamera:GRANTED");
-        }
-        else{
+            Log.d("debug", "permissionCamera:GRANTED");
+        } else {
             reqPermissions.add(Manifest.permission.CAMERA);
         }
         //  ReadExternalStorage
-        if (permissionCamera == PackageManager.PERMISSION_GRANTED){
+        if (permissionCamera == PackageManager.PERMISSION_GRANTED) {
             isAllowedExternalRead = true;
-            Log.d("debug","permissionR_E_S:GRANTED");
-        }
-        else{
+            Log.d("debug", "permissionR_E_S:GRANTED");
+        } else {
             reqPermissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
         //  WriteExternalStorage
-        if (permissionWriteExtStorage == PackageManager.PERMISSION_GRANTED){
+        if (permissionWriteExtStorage == PackageManager.PERMISSION_GRANTED) {
             isAllowedExternalWrite = true;
-            Log.d("debug","permissionW_E_S:GRANTED");
-        }
-        else{
+            Log.d("debug", "permissionW_E_S:GRANTED");
+        } else {
             reqPermissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
-        //  DENIED
+        //   IF DENIED
         if (!reqPermissions.isEmpty()) {
             ActivityCompat.requestPermissions(this,
                     reqPermissions.toArray(new String[reqPermissions.size()]),
                     REQUEST_MULTI_PERMISSIONS);
-        }
-        else{
-            cameraActivity();
         }
     }
 
     //  Permission Checkの結果の受け取り
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                         @NonNull String[] permissions, @NonNull int[] grantResults) {
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
 
         if (requestCode == REQUEST_MULTI_PERMISSIONS) {
             if (grantResults.length > 0) {
@@ -272,27 +262,12 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                             message.append("外部書込の許可がないので書き込みできません\n");
                         }
                     }
-
-                    cameraActivity();
-
                 }
             }
         }
     }
 
-    //  カメラ動作
-    private void cameraActivity()  {
-
-        //  カメラ呼び出し
-        //  画像データの保存・出力
-        //  以降別アクティビティ
-        //  画像打点
-        //  評価
-
-    }
-
-
-    private void openCamera(){
+    private void openCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         String selectedCameraId = "";
         try {
@@ -308,28 +283,6 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             e.printStackTrace();
         }
     }
-
-
-    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-        @Override
-        public void onOpened(CameraDevice cameraDevice) {
-            mCameraDevice = cameraDevice;
-            createCameraPreviewSession();
-        }
-
-        @Override
-        public void onDisconnected(CameraDevice cameraDevice) {
-            cameraDevice.close();
-            mCameraDevice = null;
-        }
-
-        @Override
-        public void onError(CameraDevice cameraDevice, int error) {
-            cameraDevice.close();
-            mCameraDevice = null;
-        }
-
-    };
 
     private void createCameraPreviewSession() {
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
@@ -372,14 +325,13 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         }
     }
 
-    //  画像確認
     public void checkBitmap() {
-        try{
+        try {
             mCaptureSession.stopRepeating(); // プレビューの更新を止める
             Bitmap bitmap = mTextureView.getBitmap();
             Intent intent = new Intent(getApplication(), PicturedActivity.class);
             intent.putExtra("bitmap", bitmap);
-            startActivityForResult(intent,1);
+            startActivityForResult(intent, 1);
 
 
         } catch (CameraAccessException e) {
@@ -387,7 +339,6 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         }
     }
 
-    //  画像保存
     public void saveBitmap() {
 
         SimpleDateFormat filename = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -399,12 +350,12 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
         try {
             mCaptureSession.stopRepeating(); // プレビューの更新を止める
-            if(mTextureView.isAvailable()) {
+            if (mTextureView.isAvailable()) {
 
                 FileOutputStream fos = null;
-                fos = new FileOutputStream(new File(file,filename.format(mDate) + ".jpg"));
+                fos = new FileOutputStream(new File(file, filename.format(mDate) + ".jpg"));
                 Bitmap bitmap = mTextureView.getBitmap();
-                bitmap.compress(Bitmap.CompressFormat.JPEG,100,fos);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
 
                 fos.close();
             }
@@ -417,87 +368,53 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             e.printStackTrace();
         }
 
-        //  save index
+        //  Save Index
         ContentValues values = new ContentValues();
         ContentResolver contentResolver = getContentResolver();
-        values.put(MediaStore.Images.Media.MIME_TYPE,"image/jpeg");
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
         contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
 
         //  Send Intent
         Intent intent = new Intent(getApplication(), PicturedActivity.class);
-        //intent.putExtra("path", file.getAbsolutePath() +"/" + filename.toString() + ".jpg");
-        intent.putExtra("path", file.getAbsolutePath() +"/" + filename.format(mDate) + ".jpg");
+        intent.putExtra("path", file.getAbsolutePath() + "/" + filename.format(mDate) + ".jpg");
         startActivity(intent);
 
     }
 
-    class CountDown extends CountDownTimer {
-
-        CountDown(long millisInFuture, long countDownInterval){
-            super(millisInFuture,countDownInterval);
-        }
-
-
-
-        //  完了時呼ばれる
-        @Override
-        public void onFinish(){
-
-            TimerText.setText(TimerFormat.format(0));
-            soundPool.play(shutter_sound,1.0f,1.0f,1,0,1);
-            saveBitmap();
-
-        }
-
-        //  インターバルで呼ばれる
-        @Override
-        public void onTick(long millisUntilFinished){
-
-            TimerText.setText(TimerFormat.format(millisUntilFinished));
-
-        }
-    }
-
-    //  センサー停止
-    protected void stop_sensor(){
+    protected void stop_sensor() {
         sensorManager.unregisterListener(this);
-        soundPool.play(startcamera_sound,1.0f,1.0f,0,0,1);
+        soundPool.play(startcamera_sound, 1.0f, 1.0f, 0, 0, 1);
         countDown.start();
     }
 
     @Override
-    public void onSensorChanged(SensorEvent event){
-        Log.d("debug","onSensorChanged");
+    public void onSensorChanged(SensorEvent event) {
+        Log.d("debug", "onSensorChanged");
 
-        if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE){
+        if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
             float sensorX = event.values[0];
             float sensorY = event.values[1];
             float sensorZ = event.values[2];
 
-            if (abs(sensorX) < threshold && abs(sensorY) < threshold && abs(sensorZ) < threshold){
+            if (abs(sensorX) < threshold && abs(sensorY) < threshold && abs(sensorZ) < threshold) {
                 stop_sensor();
             }
         }
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy){
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
-
-
 
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d("debug","onStartCameraActivity()");
+        Log.d("debug", "onStartCameraActivity()");
 
         //  Android 6.0 以上でPermission Check
-        if (Build.VERSION.SDK_INT >= 23){
+        if (Build.VERSION.SDK_INT >= 23) {
             checkMultiPermissions();
-        }
-        else{
-            cameraActivity();
         }
     }
 
@@ -505,23 +422,22 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     protected void onRestart() {
         super.onRestart();
         createCameraPreviewSession();
-        Log.d("debug","onRestartCameraActivity()");
+        Log.d("debug", "onRestartCameraActivity()");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("debug","onResumeCameraActivity()");
+        Log.d("debug", "onResumeCameraActivity()");
 
         //  Listenerの登録
         Sensor gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         Sensor gyro_uc = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE_UNCALIBRATED);
 
-        if (gyro != null){
-            sensorManager.registerListener(this,gyro,SensorManager.SENSOR_DELAY_UI);
-            sensorManager.registerListener(this,gyro_uc,SensorManager.SENSOR_DELAY_UI);
-        }
-        else{
+        if (gyro != null) {
+            sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(this, gyro_uc, SensorManager.SENSOR_DELAY_UI);
+        } else {
             String ns = "No Support!";
             sensorManager.unregisterListener(this);
         }
@@ -530,13 +446,13 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     @Override
     protected void onPause() {
         super.onPause();
-        Log.d("debug","onPauseCameraActivity()");
+        Log.d("debug", "onPauseCameraActivity()");
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d("debug","onStopCameraActivity()");
+        Log.d("debug", "onStopCameraActivity()");
 
         countDown.cancel();
     }
@@ -544,10 +460,36 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d("debug","onDestroyCameraActivity()");
+        Log.d("debug", "onDestroyCameraActivity()");
 
         countDown.cancel();
-
+        mCameraDevice.close();
         System.gc();
+    }
+
+    class CountDown extends CountDownTimer {
+
+        CountDown(long millisInFuture, long countDownInterval) {
+            super(millisInFuture, countDownInterval);
+        }
+
+
+        //  完了時呼ばれる
+        @Override
+        public void onFinish() {
+
+            TimerText.setText(TimerFormat.format(0));
+            soundPool.play(shutter_sound, 1.0f, 1.0f, 1, 0, 1);
+            saveBitmap();
+
+        }
+
+        //  インターバルで呼ばれる
+        @Override
+        public void onTick(long millisUntilFinished) {
+
+            TimerText.setText(TimerFormat.format(millisUntilFinished));
+
+        }
     }
 }

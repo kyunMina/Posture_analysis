@@ -9,64 +9,67 @@
         android:id="@+id/image_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:layout_weight="1" />
 
 
     <com.excall.minato.posture_analysis.DrawingView
         android:id="@+id/drawingView"
         android:layout_width="fill_parent"
-        android:layout_height="431dp" />
+        android:layout_height="431dp"
+        android:layout_marginTop="20dp" />
 
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_alignParentBottom="true">
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical">
 
         <Button
             android:id="@+id/btnUndo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="UNDO"
-            android:layout_margin="10dp"
-            />
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/button_bg"
+            android:text="元に戻す"
+            android:textSize="10pt"
+            android:textStyle="bold" />
+
         <Button
             android:id="@+id/btnRedo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:text="REDO"
-            />
+            android:background="@drawable/button_bg"
+            android:text="やり直し"
+            android:textSize="10pt"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/result"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="@drawable/button_bg"
+            android:visibility="gone" />
 
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"
-        android:textSize="20sp" />
 
 
     <Button
         android:id="@+id/test"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
+        android:layout_gravity="center"
         android:layout_margin="40dp"
-        android:text="戻る" />
+        android:background="@drawable/button_bg"
+        android:text="戻る"
+        android:textSize="10pt"
+        android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/counter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:text="TEST"
-        android:textSize="15pt"
-        />
 
 </RelativeLayout>

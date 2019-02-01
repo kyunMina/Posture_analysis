@@ -4,19 +4,26 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="10dp"
-        android:textSize="20sp" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="420dp">
 
-    <ImageView
-        android:id="@+id/image_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_weight="1" />
+
+        <com.excall.minato.posture_analysis.Pictured_RuledLine
+            android:id="@+id/RuledView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="20dp" />
+
+    </RelativeLayout>
+
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -29,7 +36,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
-            android:text="左に回転"/>
+            android:background="@drawable/button_bg2"
+            android:text="左に回転"
+            android:textSize="10pt"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/right"
@@ -37,7 +47,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
-            android:text="右に回転"/>
+            android:background="@drawable/button_bg2"
+            android:text="右に回転"
+            android:textSize="10pt"
+            android:textStyle="bold" />
 
 
     </LinearLayout>
@@ -53,10 +66,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
+            android:background="@drawable/button_bg"
             android:text="撮り直し"
-            android:textStyle="bold"
             android:textSize="10pt"
-            android:background="@drawable/button_bg"/>
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/analysis"
@@ -64,13 +77,12 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
+            android:background="@drawable/button_bg"
             android:text="解析"
-            android:textStyle="bold"
             android:textSize="10pt"
-            android:background="@drawable/button_bg"/>
+            android:textStyle="bold" />
 
     </LinearLayout>
-
 
 
 </LinearLayout>

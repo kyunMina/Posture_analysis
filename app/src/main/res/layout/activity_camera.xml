@@ -16,15 +16,15 @@
         android:id="@+id/texture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/Timer_text"
-        android:textSize="30sp"
-        android:textColor="#ff89"
-        android:layout_gravity="center"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textColor="#ff89"
+        android:textSize="30sp" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -37,10 +37,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
+            android:background="@drawable/button_bg"
             android:text="戻る"
-            android:textStyle="bold"
             android:textSize="10pt"
-            android:background="@drawable/button_bg"/>
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/measure"
@@ -48,10 +48,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
+            android:background="@drawable/button_bg"
             android:text="測定"
-            android:textStyle="bold"
             android:textSize="10pt"
-            android:background="@drawable/button_bg"/>
+            android:textStyle="bold" />
 
     </LinearLayout>
 

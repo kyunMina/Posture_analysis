@@ -9,12 +9,13 @@ public class HistoryStack<T> {
 
     /**
      * undo
+     *
      * @return
      */
-    public T undo(){
+    public T undo() {
 
         T result = null;
-        if( !undoStack.empty()){
+        if (!undoStack.empty()) {
             result = undoStack.pop();
             redoStack.push(result);
         }
@@ -23,12 +24,13 @@ public class HistoryStack<T> {
     }
 
     /**
-    * redo
-    * @return
-    */
-    public T redo(){
+     * redo
+     *
+     * @return
+     */
+    public T redo() {
         T result = null;
-        if( !redoStack.empty()){
+        if (!redoStack.empty()) {
             result = redoStack.pop();
             undoStack.push(result);
         }
@@ -38,18 +40,20 @@ public class HistoryStack<T> {
 
     /**
      * 履歴の追加
+     *
      * @param history
      */
-    public void add(T history){
+    public void add(T history) {
         undoStack.push(history);
         redoStack.clear();
     }
 
     /**
      * undoの列挙
+     *
      * @return
      */
-    public final Iterable<T> iterateUndo(){
+    public final Iterable<T> iterateUndo() {
         return undoStack;
     }
 }

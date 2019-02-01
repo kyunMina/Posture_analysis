@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
     android:layout_width="fill_parent"
@@ -13,19 +12,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:textSize="20sp"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginTop="20dp"
+        android:textSize="10pt" />
 
     <Button
         android:id="@+id/camera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_margin="30dp"
-        android:text="姿勢解析開始"
-        android:textStyle="bold"
+        android:layout_marginTop="70dp"
+        android:background="@drawable/button_bg"
+        android:text="姿勢測定開始"
         android:textSize="14pt"
-        android:background="@drawable/button_bg"/>
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/tips"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="70dp"
+        android:background="@drawable/button_bg"
+        android:text="使い方"
+        android:textSize="14pt"
+        android:textStyle="bold" />
 
 
 </LinearLayout>
