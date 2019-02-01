@@ -63,6 +63,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     public boolean isAllowedExternalWrite = false;
     public StringBuffer message = new StringBuffer();
 
+
     SoundPool soundPool;
     Button Test, Measure;
     private int startcamera_sound, shutter_sound;

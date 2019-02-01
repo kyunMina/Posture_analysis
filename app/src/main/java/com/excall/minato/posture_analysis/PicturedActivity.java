@@ -32,6 +32,7 @@ public class PicturedActivity extends AppCompatActivity {
         final String path = intent.getStringExtra("path");
         bitmap = BitmapFactory.decodeFile(path);
 
+
         //  Display Size
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         Display display = getWindowManager().getDefaultDisplay();

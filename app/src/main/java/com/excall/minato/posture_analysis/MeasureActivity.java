@@ -243,6 +243,7 @@ public class MeasureActivity extends AppCompatActivity {
         Log.d("debug", "onRestart()");
     }
 
+
     @Override
     protected void onResume() {
         super.onResume();

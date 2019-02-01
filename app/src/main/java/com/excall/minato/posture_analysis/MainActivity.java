@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
+
     TextView title;
     Button Camera, Tips;
 

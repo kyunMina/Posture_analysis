@@ -13,6 +13,7 @@ public class Pictured_RuledLine extends View {
     private int y = 0;
     private float StrokeWidth = 2.0f;
 
+
     {
         paint.setColor(Color.RED);
         paint.setStrokeWidth(10.f);

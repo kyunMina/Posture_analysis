@@ -21,6 +21,7 @@ public class DrawingView extends View {
     public float point_y[] = new float[100];
     private ArrayList<PointF> currentStroke;
 
+
     {
         paint.setColor(Color.RED);
         paint.setStrokeWidth(10.f);
