@@ -381,6 +381,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
     }
 
+
     protected void stop_sensor() {
         sensorManager.unregisterListener(this);
         soundPool.play(startcamera_sound, 1.0f, 1.0f, 0, 0, 1);
